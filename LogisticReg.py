@@ -21,7 +21,7 @@ def calc_acc(label_list1, label_list2):
 
 
 def sigmoid(x):
-    return 1 / (1 + math.exp(-x / 5000))
+    return 1 / (1 + math.exp(-x))
 
 
 class LogisticReg:
@@ -136,9 +136,10 @@ class LogisticReg:
         """
         Returns a row vector by 1*(n+1).
         """
-        sample_vec = np.zeros((1, self.feat_dimension + 1))
+        sample_vec = np.zeros((1, self.feat_size + 1))
         for i in sample.keys():
             sample_vec[0][i] = sample[i]
+        sample_vec[0][0] = 1.0
 
         return sample_vec
 
@@ -147,24 +148,26 @@ class LogisticReg:
         Returns the predict vector of probabilities.
         """
         X = sample_vec.T
-        pred = np.dot(self.Theta[j, :], X)[0]
+        # print np.dot(self.Theta[0, :], X)[0]
+        pred = sigmoid(np.dot(self.Theta[0, :], X)[0])
         return pred
 
-    def train_batch(self, max_iter=200, learn_rate=1.0, delta=1e-3):
+    def train_batch(self, max_iter=200, learn_rate=0.1, delta=1e-3):
         """
-        Training a logistic regression model, the samples and labels should be
-        already assigned to field self.sample_list and self.label_list.
+        Training a logistic regression model using Gradient descent method.
+        the samples and labels should be already assigned to field
+        self.sample_list and self.label_list.
 
         max_iter: the maximum number of iteration(default 200).
         learn_rate: the learning rate of train process(default 1.0).
         delta: the threshold of cost function value(default 0.001).
         """
         print '-' * 60
-        print "START TRAIN BATCH:"
+        print "START TRAIN (Gradient descent):"
 
         # training process
         n = len(self.label_list)
-        mle_pre, mle = 0.
+        mle_pre, mle = 0., 0.
         rd = 0
         while rd < max_iter:
             omega = np.zeros((1, self.feat_size + 1))
@@ -175,7 +178,9 @@ class LogisticReg:
                 pred = 1 if hx > self.thrd else 0
                 if y != pred:
                     error += 1
+                # print hx
                 mle += y * math.log(hx) + (1 - y) * math.log(1 - hx)
+                print hx
                 omega += learn_rate * (y - hx) * self.sample_list[i]
 
             acc = 1 - float(error) / n
@@ -184,9 +189,102 @@ class LogisticReg:
             if rd != 0 and (mle - mle_pre) < delta and mle >= mle_pre:
                 print "\n\nReach the minimal cost value threshold!"
             mle_pre = mle
+            self.Theta += omega
             rd += 1
 
         if rd == max_iter:
+            print "Train loop has reached the maximum of iteration."
+        print "Training process finished."
+
+    def train_sgd(self, max_iter=200, learn_rate=1.0, delta=1e-3):
+        """
+        Training a logistic regression model using Stochastic Gradient descent
+        method.
+        the samples and labels should be already assigned to field
+        self.sample_list and self.label_list.
+
+        max_iter: the maximum number of iteration(default 200).
+        learn_rate: the learning rate of train process(default 1.0).
+        delta: the threshold of cost function value(default 0.001).
+        """
+        print '-' * 60
+        print "START TRAIN (Stochastic Gradient descent):"
+
+        # training process
+        m = len(self.label_list)
+        mle_pre, mle = 0., 0.
+        rd = 0
+        while rd < max_iter * m:
+            if rd % m == 0 and rd != 0:
+                loop = rd / m
+                error = 0
+                mle = 0.
+                for i in range(m):
+                    y = self.label_list[i]
+                    hx = self.predict(self.sample_list[i])
+                    pred = 1 if hx > self.thrd else 0
+                    if y != pred:
+                        error += 1
+                    mle += y * math.log(hx) + (1 - y) * math.log(1 - hx)
+
+                acc = 1 - float(error) / m
+                print "Iter %4d    MLE:%4.4f    Acc:%.4f" % (loop, mle, acc)
+                if loop != 0 and (mle - mle_pre) < delta and mle >= mle_pre:
+                    print "\n\nReach the minimal cost value threshold!"
+                    break
+                mle_pre = mle
+
+            i = random.randint(0, m - 1)
+            y = self.label_list[i]
+            hx = self.predict(self.sample_list[i])
+            pred = 1 if hx > self.thrd else 0
+            self.Theta += learn_rate * (y - hx) * self.sample_list[i]
+            rd += 1
+
+        if rd == max_iter * m:
+            print "Train loop has reached the maximum of iteration."
+        print "Training process finished."
+
+    def train_newton(self, max_iter=100, thrd=1e-5):
+        """
+        Training a logistic regression model using Newton's method
+        the samples and labels should be already assigned to field
+        self.sample_list and self.label_list.
+        """
+
+        n = len(self.sample_list)
+        m = self.feat_size
+        rd = 0
+        cost = 0.
+        cost_pre = 0.
+        while rd < max_iter:
+            cost = 0.
+            error = 0
+            grad = np.zeros((1, m + 1))
+            H = np.zeros((m + 1, m + 1))
+            for i in range(n):
+                x = self.sample_list[i]
+                y = self.label_list[i]
+                hx = self.predict(self.sample_list[i])
+                pred = 1 if hx > self.thrd else 0
+                if y != pred:
+                    error += 1
+                cost -= y * math.log(hx) + (1 - y) * math.log(1 - hx)
+                grad += (hx - y) * x
+                H += hx * (1 - hx) * np.dot(x.T, x)
+            cost /= n
+            grad /= n
+            H /= n
+            acc = 1 - float(error) / n
+            print "Iter %4d    Cost:%4.8f    Acc:%.4f" % (rd, cost, acc)
+            if rd != 0 and (cost_pre - cost) < thrd and cost_pre >= cost:
+                print "\n\nReach the minimal cost value threshold!"
+                break
+            self.Theta -= np.dot(np.mat(H).I, grad.T).T
+            cost_pre = cost
+            rd += 1
+
+        if rd == max_iter * m:
             print "Train loop has reached the maximum of iteration."
         print "Training process finished."
 
@@ -228,6 +326,20 @@ class LogisticReg:
             self.sample_list.append(self.__getSampleVec(sample_vec))
         self.setFeatSize(max_index)
 
+    def loadSamples(self, samples=[], labels=[]):
+        """
+        Loads samples' and labels' list from data.
+        """
+        max_index = 0
+        self.label_list = labels
+        self.sample_list = []
+        for samp in samples:
+            size = max(samp.keys())
+            if size > max_index:
+                max_index = size
+            self.sample_list.append(self.__getSampleVec(samp))
+        return max_index
+
 
 def make_data(filepath):
     """
@@ -239,7 +351,7 @@ def make_data(filepath):
     data = codecs.open(filepath, 'r')
     for line in data.readlines():
         val = line.strip().split('\t')
-        labels.append(val[0])
+        labels.append(int(val[0]))
         sample_vec = {}
         val = val[-1].split(" ")
         for i in range(0, len(val)):
@@ -249,7 +361,7 @@ def make_data(filepath):
     return samples, labels
 
 
-def create(label_list, sample_list, thrd=0.5):
+def create(sample_list, label_list, feat_size=1, thrd=0.5):
     """
     Creates an instance of LogisticReg with given parameters.
 
@@ -258,11 +370,18 @@ def create(label_list, sample_list, thrd=0.5):
     thrd: threshold of probability that a sample will be tagged as a positive
           class.
     """
-    tmp = LogisticReg(thrd=thrd)
+    tmp = LogisticReg(feat_size=feat_size, thrd=thrd)
     tag = True
-    if tmp.loadFeatSize(size, classNum):
+    if tmp.initTheta():
         # initialization successed
-        print "Initialization successed!"
+        k = tmp.loadSamples(sample_list, label_list)
+        if k > feat_size:
+            print "Error: feature dimensionalty not matching!"
+            print "Feature dimensionalty you give:  %d" % feat_size
+            print "Feature dimensionalty from data: %d" % k
+            tag = False
+        else:
+            print "Initialization successed!"
     else:
         # not successed
         tag = False
