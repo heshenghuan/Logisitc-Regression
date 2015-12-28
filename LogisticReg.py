@@ -180,14 +180,15 @@ class LogisticReg:
                     error += 1
                 # print hx
                 mle += y * math.log(hx) + (1 - y) * math.log(1 - hx)
-                print hx
                 omega += learn_rate * (y - hx) * self.sample_list[i]
 
             acc = 1 - float(error) / n
+            mle /= n
             print "Iter %4d    MLE:%4.4f    Acc:%.4f" % (rd, mle, acc)
 
             if rd != 0 and (mle - mle_pre) < delta and mle >= mle_pre:
                 print "\n\nReach the minimal cost value threshold!"
+                break
             mle_pre = mle
             self.Theta += omega
             rd += 1
@@ -228,6 +229,7 @@ class LogisticReg:
                     mle += y * math.log(hx) + (1 - y) * math.log(1 - hx)
 
                 acc = 1 - float(error) / m
+                mle /= m
                 print "Iter %4d    MLE:%4.4f    Acc:%.4f" % (loop, mle, acc)
                 if loop != 0 and (mle - mle_pre) < delta and mle >= mle_pre:
                     print "\n\nReach the minimal cost value threshold!"
