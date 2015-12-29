@@ -39,7 +39,7 @@ if __name__ == '__main__':
     plt.title('Newton Method')
 
     case, tag = lr.create(x, y, 2, 0.5)
-    case.train_newton()
+    case.train_newton(max_iter=200, thrd=1e-6)
 
     test_y = plotTheta(case.Theta, test_x)
     plt.plot(test_x, test_y, 'r')
