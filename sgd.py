@@ -45,7 +45,6 @@ def plotTheta(theta, x):
     y = []
     for a in x:
         y.append(-(t1 * a + t0) / t2)
-    print y
     return y
 
 
