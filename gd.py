@@ -38,13 +38,36 @@ def scale(x):
 
 
 def plotTheta(theta, x):
-    t0 = theta[0][0]
-    t1 = theta[0][1]
-    t2 = theta[0][2]
+    t0 = theta[0]
+    t1 = theta[1]
+    t2 = theta[2]
     y = []
+    if t2 == 0:
+        # In the 1st round, theta is [0, 0, 0]
+        return [0]*len(x)
     for a in x:
         y.append(-(t1 * a + t0) / t2)
     return y
+
+
+def show_graph(fig, axarr, x0, x1, theta, cost):
+    length = len(theta)
+    test_x = [-0.5 + i * 0.1 for i in range(10)]
+
+    for i in range(length):
+        test_y = plotTheta(theta[i], test_x)
+        axarr[0].cla()
+        axarr[0].set_xlim([-0.6, 0.6])
+        axarr[0].set_ylim([-0.6, 0.6])
+        axarr[0].plot(x0[0], x1[0], 'o')
+        axarr[0].plot(x0[1], x1[1], 'r+')
+        axarr[0].plot(test_x, test_y, 'g')
+        axarr[0].set_title('Logistic Regression (GD)')
+        axarr[1].set_title('Logistic Regression MLE value')
+        axarr[1].scatter(i + 1, cost[i], color='r')
+        axarr[1].set_xlim([1, length + 1])
+        axarr[1].set_ylim([-0.8, -0.4])
+        fig.canvas.draw()
 
 if __name__ == '__main__':
     x, y = lr.make_data(r"ex4.dat")
@@ -60,13 +83,11 @@ if __name__ == '__main__':
             x1[0].append(x[i][2])
 
     test_x = [-0.5 + i * 0.1 for i in range(10)]
-    plt.plot(x0[0], x1[0], 'o')
-    plt.plot(x0[1], x1[1], 'r+')
-    plt.title('Gradient Ascent (Batch Updating)')
 
     case, tag = lr.create(x, y, 2, 0.5)
-    case.train_batch(max_iter=200, learn_rate=0.1, delta=1e-3)
+    theta, mle = case.train_batch(max_iter=200, learn_rate=0.1, delta=1e-3)
 
-    test_y = plotTheta(case.Theta, test_x)
-    plt.plot(test_x, test_y, 'g')
-    plt.show()
+    fig, axarr = plt.subplots(1, 2, figsize=(14, 5))
+    fig.show()
+    show_graph(fig, axarr, x0, x1, theta, mle)
+    raw_input()

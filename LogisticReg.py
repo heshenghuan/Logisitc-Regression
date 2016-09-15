@@ -165,6 +165,9 @@ class LogisticReg:
         print '-' * 60
         print "START TRAIN (Gradient descent):"
 
+        theta_rd = []
+        mle_rd = []
+
         # training process
         n = len(self.label_list)
         mle_pre, mle = 0., 0.
@@ -185,7 +188,11 @@ class LogisticReg:
             acc = 1 - float(error) / n
             mle /= n
             print "Iter %4d    MLE:%4.4f    Acc:%.4f" % (rd, mle, acc)
-
+            a = []
+            for nn in self.Theta[0]:
+                a.append(nn)
+            theta_rd.append(a)
+            mle_rd.append(mle)
             if rd != 0 and (mle - mle_pre) < delta and mle >= mle_pre:
                 print "\n\nReach the minimal cost value threshold!"
                 break
@@ -196,6 +203,7 @@ class LogisticReg:
         if rd == max_iter:
             print "Train loop has reached the maximum of iteration."
         print "Training process finished."
+        return [theta_rd, mle_rd]
 
     def train_sgd(self, max_iter=200, learn_rate=1.0, delta=1e-3):
         """
@@ -210,6 +218,9 @@ class LogisticReg:
         """
         print '-' * 60
         print "START TRAIN (Stochastic Gradient descent):"
+
+        theta_rd = []
+        mle_rd = []
 
         # training process
         m = len(self.label_list)
@@ -231,6 +242,11 @@ class LogisticReg:
                 acc = 1 - float(error) / m
                 mle /= m
                 print "Iter %4d    MLE:%4.4f    Acc:%.4f" % (loop, mle, acc)
+                a = []
+                for nn in self.Theta[0]:
+                    a.append(nn)
+                theta_rd.append(a)
+                mle_rd.append(mle)
                 if loop != 0 and (mle - mle_pre) < delta and mle >= mle_pre:
                     print "\n\nReach the minimal cost value threshold!"
                     break
@@ -246,6 +262,7 @@ class LogisticReg:
         if rd == max_iter * m:
             print "Train loop has reached the maximum of iteration."
         print "Training process finished."
+        return [theta_rd, mle_rd]
 
     def train_newton(self, max_iter=100, thrd=1e-5):
         """
@@ -256,6 +273,8 @@ class LogisticReg:
 
         n = len(self.sample_list)
         m = self.feat_size
+        theta_rd = []
+        mle_rd = []
         rd = 0
         cost = 0.
         cost_pre = 0.
@@ -279,6 +298,11 @@ class LogisticReg:
             H /= n
             acc = 1 - float(error) / n
             print "Iter %4d    Cost:%4.8f    Acc:%.4f" % (rd, cost, acc)
+            a = []
+            for nn in self.Theta[0]:
+                a.append(nn)
+            theta_rd.append(a)
+            mle_rd.append(cost)
             if rd != 0 and (cost_pre - cost) < thrd and cost_pre >= cost:
                 print "\n\nReach the minimal cost value threshold!"
                 break
@@ -289,6 +313,7 @@ class LogisticReg:
         if rd == max_iter * m:
             print "Train loop has reached the maximum of iteration."
         print "Training process finished."
+        return [theta_rd, mle_rd]
 
     def classify(self, sample_test):
         """Classify the sample_test, returns the most likely label."""
